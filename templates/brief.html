@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Results Overview</title>
+    <base href="/bioinf2/edm_web/static/jsmol/j2s/">
+    <style>
+        body { background-color: #f3f3ff; }
+        .vf-body { min-height: 60vh; }
+        .hero-banner { background-color: #2c3e50; color: #ffffff; padding: 80px 20px 40px 20px; text-align: center; position: relative; }
+        .hero-nav-container { position: absolute; top: 0; left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.2); padding: 10px 0; }
+        .hero-banner .vf-navigation__link { color: #ecf0f1; padding: 8px 16px; border-bottom: 2px solid transparent; transition: color 0.2s, border-bottom-color 0.2s; }
+        .hero-banner .vf-navigation__link:hover { color: #ffffff; text-decoration: none; }
+        .hero-banner .vf-navigation__link[aria-current='page'] { color: #ffffff; font-weight: bold; border-bottom-color: #3498db; }
+        .hero-banner h1 { font-size: 3rem; font-weight: 700; margin: 0; }
+        .hero-banner p { font-size: 1.25rem; color: #bdc3c7; margin-top: 10px; }
+        .pagination-nav { display: flex; justify-content: center; margin-top: 24px; }
+        .pagination-list { display: flex; list-style: none; padding: 0; margin: 0; border: 1px solid #d9d9d9; border-radius: 4px; overflow: hidden; }
+        .pagination-item { margin: 0; }
+        .pagination-link { display: block; padding: 8px 16px; color: #007c82; text-decoration: none; border-right: 1px solid #d9d9d9; transition: background-color 0.2s; }
+        .pagination-item:last-child .pagination-link { border-right: none; }
+        .pagination-item:not(.disabled) .pagination-link:hover { background-color: #f0f8ff; }
+        .pagination-item.active .pagination-link { background-color: #007c82; color: #ffffff; font-weight: bold; cursor: default; }
+        .pagination-item.disabled .pagination-link { color: #aaaaaa; background-color: #f8f8f8; pointer-events: none; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <section class="hero-banner">
+        <div class="hero-nav-container">
+            <nav class="vf-navigation">
+                <ul class="vf-navigation__list" style="display: flex; list-style: none; padding: 0; margin: 0; justify-content: center;">
+                    
+                    <li class="vf-navigation__item" style="margin: 0 15px;">
+                        <a href="/bioinf2/edm_web/" class="vf-navigation__link" aria-current="page">Home</a>
+                    </li>
+                    <li class="vf-navigation__item" style="margin: 0 15px;">
+                        <a href="/bioinf2/edm_web/introduction.html" class="vf-navigation__link">Introduction</a>
+                    </li>
+                    <li class="vf-navigation__item" style="margin: 0 15px;">
+                        <a href="/bioinf2/edm_web/code.html" class="vf-navigation__link">Code</a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <script type="text/javascript" src="/bioinf2/edm_web/static/jsmol/JSmol.min.js"></script>
+        </div>
+        
+    
+    </section>
+
+    <main class="vf-body">
+        <section class="vf-grid vf-grid__col-1" style="padding-top: 48px;">
+            <div class="vf-content" id="brief-content">
+                <div id="loading-indicator" style="text-align: center; padding: 50px;">
+                    <div class="loader" style="margin: 0 auto;"></div>
+                    <p>正在加载结果概览...</p>
+                </div>
+            </div>
+        </section>
+        </main>
+
+    <footer class="vf-footer">
+        </footer>
+
+    <script>
+        // ★★★★★ 关键修改 1: 硬编码 URL ★★★★★
+        const BACKEND_API_URL = "http://202.121.180.146:2348";
+        const APP_BASE_PATH = "/bioinf2/edm_web";
+
+        // ★★★★★ 关键修改 2: 从 URL 查询参数中读取变量 ★★★★★
+        const urlParams = new URLSearchParams(window.location.search);
+        const task_id = urlParams.get('task_id');
+        const page = parseInt(urlParams.get('page')) || 1;
+
+        const briefContent = document.getElementById('brief-content');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        async function fetchAndRenderBrief() {
+            try {
+                // ★ 调用新的 /api/brief 路由 (不变)
+                const response = await fetch(`${BACKEND_API_URL}/api/brief/${task_id}?page=${page}`);
+                // ...
+                const data = await response.json();
+                loadingIndicator.style.display = 'none';
+
+                if (data.status === 'processing') {
+                    // ★★★★★ 关键修改 3: 重定向到 waiting.html ★★★★★
+                    window.location.href = `${APP_BASE_PATH}/waiting.html?task_id=${task_id}`;
+                    return;
+                }
+
+                // ... (构建任务信息和摘要 HTML 不变) ...
+                
+                // 3. 构建分子表格
+                if (data.molecules && data.molecules.length > 0) {
+                    // ...
+                    data.molecules.forEach((molecule, index) => {
+                        const rank = ((pagination.page - 1) * pagination.per_page) + index + 1;
+                        // ★★★★★ 关键修改 4: 构造指向 result.html 的 URL ★★★★★
+                        const detailUrl = `${APP_BASE_PATH}/result.html?molecule_id=${molecule.id}&rank=${rank}&task_id=${task_id}`;
+                        
+                        html += `
+                            <tr>
+                                <td>
+                                    <a href="${detailUrl}" class="vf-button vf-button--primary vf-button--sm">View Detail</a>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table></div>';
+
+                    // 4. 构建分页控件
+                    if (pagination.pages > 1) {
+                        // ★★★★★ 关键修改 5: 构造分页 URL ★★★★★
+                        const prevUrl = pagination.has_prev ? `${APP_BASE_PATH}/brief.html?task_id=${task_id}&page=${pagination.prev_num}` : '#';
+                        const nextUrl = pagination.has_next ? `${APP_BASE_PATH}/brief.html?task_id=${task_id}&page=${pagination.next_num}` : '#';
+
+                        html += `<nav class="pagination"> ... (分页 HTML 不变) ... </nav>`;
+                    }
+                } else {
+                    historyContainer.innerHTML = '<p>No recent tasks found.</p>';
+                }
+                briefContent.innerHTML = html;
+            } catch (error) {
+                console.error('Error fetching task history:', error);
+                historyLoading.style.display = 'none';
+                historyContainer.innerHTML = '<p style="color: red;">Could not load task history.</p>';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', fetchAndRenderBrief);
+    </script>
+    </body>
+</html>

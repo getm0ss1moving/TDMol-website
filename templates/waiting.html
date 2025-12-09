@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>任务已提交 - MoleculeCreater</title>
+    <!-- ========================================
+         TODO: 根据实际部署路径调整 base href
+         ======================================== -->
+    <base href="/bioinf2/edm_web/">
+    <style>
+        body { background-color: #f3f3ff; }
+        .vf-body { min-height: 60vh; }
+        .hero-banner { background-color: #2c3e50; color: #ffffff; padding: 80px 20px 40px 20px; text-align: center; position: relative; }
+        .vf-container { padding-top: 30px; padding-bottom: 50px; }
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-banner">
+        <h1>任务已提交</h1>
+        <p>您的分子生成任务正在后台处理中...</p>
+    </div>
+
+    <div class="vf-container vf-body">
+        <div class="loader"></div>
+        <p id="status-text" class="vf-text-align--center">正在等待结果文件从后端服务器回传...</p>
+        <p id="task-id-display" class="vf-text-align--center">任务 ID: N/A</p>
+        <p class="vf-text-align--center vf-u-margin__top--200">
+            <strong>提示:</strong>
+            程序大约需要 1-2 分钟响应，请耐心等待。<br>
+            结果完成后会自动跳转，您也可以将此页面加入书签稍后返回。
+        </p>
+        <div class="vf-text-align--center vf-u-margin__top--400">
+            <a id="result-link" href="#" class="vf-button vf-button--primary" style="display:none;">查看结果</a>
+        </div>
+        <p class="vf-text-align--center" style="margin-top: 20px;">
+            <a href="index.html" style="color: #3498db;">返回首页</a>
+        </p>
+        <p class="vf-text-align--center" style="color: blue; margin-top: 10px;">
+            <strong>注意:</strong> 请勿刷新此页面，否则会导致重新提交。
+        </p>
+    </div>
+
+    <script>
+        // ========================================
+        // 仿照 RNAJog 的轮询机制
+        // ========================================
+
+        // 防止页面刷新 (类似 RNAJog 的 onbeforeunload)
+        window.onbeforeunload = function(e) {
+            var dialogText = 'Please do not refresh here';
+            e.returnValue = dialogText;
+            return dialogText;
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从 URL 获取任务 ID
+            const pathParts = window.location.pathname.split('/');
+            const taskId = pathParts[pathParts.length - 1] ||
+                          new URLSearchParams(window.location.search).get('task_id');
+
+            const taskIdDisplay = document.getElementById('task-id-display');
+            const statusText = document.getElementById('status-text');
+            const resultLink = document.getElementById('result-link');
+
+            if (!taskId) {
+                statusText.textContent = "错误: 未找到任务 ID";
+                return;
+            }
+
+            taskIdDisplay.textContent = `任务 ID: ${taskId}`;
+
+            // ========================================
+            // 轮询配置 (类似 RNAJog 的 setInterval)
+            // ========================================
+            let flag = false; // 结果是否已准备好
+            let checkCount = 0;
+            const maxChecks = 90; // 最多检查 90 次 (30 分钟)
+            const pollInterval = 20000; // 每 20 秒检查一次 (类似 RNAJog 的 20000ms)
+
+            // ========================================
+            // 检查结果函数 (类似 RNAJog 的 find() 和 send())
+            // ========================================
+            function checkResult() {
+                checkCount++;
+
+                // 调用后端 API 检查结果状态
+                fetch(`check_result/${taskId}`, {
+                    method: 'GET',
+                    cache: 'no-store'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ready) {
+                        // 结果已准备好 (类似 RNAJog 的 addhtml())
+                        flag = true;
+                        clearInterval(interval);
+
+                        statusText.textContent = "任务已完成！正在跳转...";
+                        resultLink.style.display = 'inline-block';
+                        resultLink.href = data.result_url;
+
+                        // 自动跳转到结果页面
+                        setTimeout(() => {
+                            window.location.href = data.result_url;
+                        }, 1000);
+                    } else {
+                        // 结果尚未准备好
+                        statusText.textContent = `正在处理中... (已检查 ${checkCount} 次)`;
+                    }
+                })
+                .catch(error => {
+                    console.error('检查失败:', error);
+                    statusText.textContent = `检查状态失败 (第 ${checkCount} 次)`;
+                });
+
+                // 达到最大检查次数
+                if (checkCount >= maxChecks) {
+                    clearInterval(interval);
+                    statusText.textContent = "处理时间过长，请稍后手动刷新页面或联系管理员。";
+                }
+            }
+
+            // ========================================
+            // 启动轮询 (类似 RNAJog 的 setInterval("find(url)",20000))
+            // ========================================
+            const interval = setInterval(checkResult, pollInterval);
+
+            // 立即执行一次检查
+            checkResult();
+
+            // 30 分钟后停止轮询 (类似 RNAJog 的 setTimeout 1800000ms)
+            setTimeout(() => {
+                if (!flag) {
+                    clearInterval(interval);
+                    statusText.textContent = "等待超时，请稍后手动刷新页面。";
+                }
+            }, 1800000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<form role="form" name="myform" id="myform" action="EDM.php" method="post" onSubmit="" enctype="multipart/form-data">
+<table width="790" cellspacing="0" cellpadding="0">
+<tr><td height="50">
+xt-xd-xdx-
+<p><b>sTEP 1: Choose a model version and input sequence</b></p>
+</td>
+<table width="1oo%" cellspacing="o" cellpadding="1o" bgcolor="#DFF0rF" id="step1">
+<tr><td height="20">
+<div
+<!-- Nav tabs -->
+一
+<ul claSs="nav nav-tabs"role="tablist">
+<li role="presentation""
+ id="li_RNAJog"><a href="#home" aria-controls="home" role="tab" data-toggle="tab" onclick="init() ;">RNAJog</a></li>
+class="active""
+<li
+ role="presentation" id="li_RNAJogZero"><a href="#optionl" aria-controls="optionl" role="tab" data-toggle="tab" onclick="init();">RNAJog-Zero</a></li>
+<!--<li role="presentation"><a href="#option2" aria-controls="option2" role="tab" data-toggle="tab" onclick="activate option2()">RNAJog(high CAI finetune)</a
+</ul>
+→
+ Tab panes -->
+<div class="tab-content">

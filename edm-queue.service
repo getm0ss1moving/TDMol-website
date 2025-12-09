@@ -1,0 +1,21 @@
+[Unit]
+Description=EDM Queue Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/bioinf/TDMol
+ExecStart=/bin/bash /var/www/bioinf/TDMol/queue_daemon.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/www/bioinf/TDMol/logs/daemon_systemd.log
+StandardError=append:/var/www/bioinf/TDMol/logs/daemon_systemd_error.log
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

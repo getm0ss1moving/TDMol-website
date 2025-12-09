@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Prediction - MoleculeCreater with EDM</title>
+    <base href="/bioinf2/edm_web/static/jsmol/j2s/">
+    
+    <meta name="description" content="EDMCreater: Generate molecules from text descriptions using Equivariant Diffusion Models.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://assets.emblstatic.net/vf/v2.5.0/css/styles.css">
+    <link rel="stylesheet" href="https://dev.ebi.emblstatic.net/web_guidelines/EBI-Icon-fonts/v1.3/fonts.css" type="text/css" media="all">
+    
+    <style>
+        body { background-color: #f3f3ff; }
+        .vf-body { min-height: 60vh; }
+        .hero-banner { background-color: #2c3e50; color: #ffffff; padding: 80px 20px 40px 20px; text-align: center; position: relative; }
+        .hero-nav-container { position: absolute; top: 0; left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.2); padding: 10px 0; }
+        .hero-banner .vf-navigation__link { color: #ecf0f1; padding: 8px 16px; border-bottom: 2px solid transparent; transition: color 0.2s, border-bottom-color 0.2s; }
+        .hero-banner .vf-navigation__link:hover { color: #ffffff; text-decoration: none; }
+        .hero-banner .vf-navigation__link[aria-current='page'] { color: #ffffff; font-weight: bold; border-bottom-color: #3498db; }
+        .hero-banner h1 { font-size: 3rem; font-weight: 700; margin: 0; }
+        .hero-banner p { font-size: 1.25rem; color: #bdc3c7; margin-top: 10px; }
+        .pagination-nav { display: flex; justify-content: center; margin-top: 24px; }
+        .pagination-list { display: flex; list-style: none; padding: 0; margin: 0; border: 1px solid #d9d9d9; border-radius: 4px; overflow: hidden; }
+        .pagination-item { margin: 0; }
+        .pagination-link { display: block; padding: 8px 16px; color: #007c82; text-decoration: none; border-right: 1px solid #d9d9d9; transition: background-color 0.2s; }
+        .pagination-item:last-child .pagination-link { border-right: none; }
+        .pagination-item:not(.disabled) .pagination-link:hover { background-color: #f0f8ff; }
+        .pagination-item.active .pagination-link { background-color: #007c82; color: #ffffff; font-weight: bold; cursor: default; }
+        .pagination-item.disabled .pagination-link { color: #aaaaaa; background-color: #f8f8f8; pointer-events: none; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <section class="hero-banner">
+        <div class="hero-nav-container">
+            <nav class="vf-navigation">
+                <ul class="vf-navigation__list" style="display: flex; list-style: none; padding: 0; margin: 0; justify-content: center;">
+                    
+                    <li class="vf-navigation__item" style="margin: 0 15px;">
+                        <a href="/bioinf2/edm_web/" class="vf-navigation__link" aria-current="page">Home</a>
+                    </li>
+                    <li class="vf-navigation__item" style="margin: 0 15px;">
+                        <a href="/bioinf2/edm_web/introduction.html" class="vf-navigation__link">Introduction</a>
+                    </li>
+                    <li class="vf-navigation__item" style="margin: 0 15px;">
+                        <a href="/bioinf2/edm_web/code.html" class="vf-navigation__link">Code</a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <script type="text/javascript" src="/bioinf2/edm_web/static/jsmol/JSmol.min.js"></script>
+        </div>
+        
+        <h1>MoleculeCreater with EDM</h1>
+        <p>Generate Molecules from Text Descriptions</p>
+    </section>
+
+    <main class="vf-body">
+        <section class="vf-grid vf-grid__col-1" style="padding-top: 48px;">
+            <div class="vf-content">
+                <div style="background-color: #ffffff; padding: 24px 32px; border: 1px solid #d9d9d9;">
+                    <h3 class="vf-text-heading--3">Describe Your Molecule</h3>
+                    <p>Enter an English description of the molecule you want to generate...</p>
+                    <p>Not sure where to start? <a href="#" id="example-link" class="vf-link">Try an example</a>.</p>
+                    <form id="main-form" method="post" class="vf-form">
+                        <div class="vf-form__item">
+                            <label class="vf-form__label" for="molecule-description">Molecule Description</label>
+                            <textarea id="molecule-description" name="user_input" class="vf-form__textarea" rows="8" placeholder="e.g., A non-steroidal anti-inflammatory drug (NSAID)..." required></textarea>
+                            <div id="char-counter" class="char-counter">0 / 10000</div>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button type="submit" id="submit-button" class="vf-button vf-button--primary vf-button--large">Submit</button>
+                            <button type="reset" id="clear-button" class="vf-button vf-button--secondary">Clear</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="vf-grid vf-grid__col-1" style="padding-top: 48px;">
+            <div class="vf-content">
+                <h2 class="vf-text-heading--2">Recent Tasks</h2>
+                <p>Showing tasks from the last 3 days.</p>
+                <div id="task-history-container">
+                    <div id="history-loading" style="text-align: center; padding: 30px;">
+                        <p>Loading history...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </main>
+
+    <footer class="vf-footer">
+        </footer>
+
+    <script>
+        // ★★★★★ 关键修改 1: 硬编码 URL ★★★★★
+        const BACKEND_API_URL = "http://202.121.180.146:2348";
+        const APP_BASE_PATH = "/bioinf2/edm_web";
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('main-form');
+            const textarea = document.getElementById('molecule-description');
+            const charCounter = document.getElementById('char-counter');
+            const submitButton = document.getElementById('submit-button');
+            const clearButton = document.getElementById('clear-button');
+            const exampleLink = document.getElementById('example-link');
+                
+            // ... (updateCharCounter, exampleLink, reset 逻辑不变) ...
+            function updateCharCounter() {
+                const currentLength = textarea.value.length;
+                charCounter.textContent = `${currentLength} / 10000`;
+                if (currentLength > 10000) {
+                    charCounter.style.color = 'red';
+                    submitButton.disabled = true;
+                } else {
+                    charCounter.style.color = 'inherit';
+                    submitButton.disabled = false;
+                }
+            }
+            textarea.addEventListener('input', updateCharCounter);
+            exampleLink.addEventListener('click', function(e) { 
+                e.preventDefault();
+                textarea.value = "A small organic molecule with a pyridine ring, a carboxylic acid group, and a secondary amide linker, designed to be orally bioavailable.";
+                updateCharCounter();
+             });
+            form.addEventListener('reset', function() { 
+                setTimeout(updateCharCounter, 0); 
+            });
+            updateCharCounter();
+
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();  //似乎少一块
+                const formData = new FormData(form);
+                submitButton.disabled = true;
+                clearButton.disabled = true;
+                submitButton.innerHTML = '正在提交...';
+
+                // ★ 调用后端的 /api/run 接口 (不变)
+                fetch(BACKEND_API_URL + '/api/run', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.task_id) {
+                        // ★★★★★ 关键修改 2: 跳转到 waiting.html 并使用查询参数 ★★★★★
+                        window.location.href = APP_BASE_PATH + '/waiting.html?task_id=' + data.task_id;
+                    } else {
+                        throw new Error(data.message || '提交时发生未知错误。');
+                    }
+                })
+                .catch(error => {
+                    console.error('提交错误:', error);
+                    alert('提交任务时出错: ' + error.message); 
+                    submitButton.disabled = false;
+                    clearButton.disabled = false;
+                    submitButton.innerHTML = "Submit";
+                });
+            });
+
+            const historyContainer = document.getElementById('task-history-container');
+            const historyLoading = document.getElementById('history-loading');
+
+            async function fetchTaskHistory() {
+                try {
+                    // ★ 调用后端的 /api/tasks 接口 (不变)
+                    const response = await fetch(BACKEND_API_URL + '/api/tasks?page=1');
+                    if (!response.ok) throw new Error('Failed to load history');
+                    
+                    const data = await response.json();
+                    historyLoading.style.display = 'none';
+
+                    if (data.tasks && data.tasks.length > 0) {
+                        let html = '<table class="vf-table vf-table--striped">';
+                        html += `<thead>...</thead><tbody>`;
+                        
+                        data.tasks.forEach(task => {
+                            // ★★★★★ 关键修改 3: 链接到 brief.html 并使用查询参数 ★★★★★
+                            html += `
+                                <tr>
+                                    <td><code>${task.task_id.substring(0, 8)}...</code></td>
+                                    <td>"${task.user_input_preview}"</td>
+                                    <td>${task.status}</td>
+                                    <td>${task.created_at}</td>
+                                    <td>
+                                        <a href="${APP_BASE_PATH}/brief.html?task_id=${task.task_id}" class="vf-button vf-button--primary vf-button--sm">
+                                            View Results
+                                        </a>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        html += '</tbody></table>';
+                        historyContainer.innerHTML = html;
+                    } else {
+                        historyContainer.innerHTML = '<p>No recent tasks found.</p>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching task history:', error);
+                    historyLoading.style.display = 'none';
+                    historyContainer.innerHTML = '<p style="color: red;">Could not load task history.</p>';
+                }
+            }
+            fetchTaskHistory();
+        });
+    </script>
+    </body>
+</html>

@@ -1,0 +1,167 @@
+
+
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- The title will be different for each page -->
+    <title>{% block title %}MoleculeCreater with EDM{% endblock %}</title>
+    <base href="/static/jsmol/j2s">
+    <meta name="description" content="EDMCreater: Generate molecules from text descriptions using Equivariant Diffusion Models.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://assets.emblstatic.net/vf/v2.5.0/css/styles.css">
+    <link rel="stylesheet" href="https://dev.ebi.emblstatic.net/web_guidelines/EBI-Icon-fonts/v1.3/fonts.css" type="text/css" media="all">
+    
+    <style>
+        body { background-color: #f3f3ff; }
+        .vf-body { min-height: 60vh; }
+        
+        /* --- NEW STYLES FOR THE HERO BANNER --- */
+
+        /* 1. Style the main hero container */
+        .hero-banner {
+            background-color: #2c3e50; /* A modern dark blue/grey */
+            color: #ffffff;
+            padding: 80px 20px 40px 20px; /* Top, sides, bottom padding */
+            text-align: center;
+            position: relative; /* Crucial for positioning the navigation inside it */
+        }
+        
+        /* 2. Style the navigation container to sit at the top */
+        .hero-nav-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2); /* A semi-transparent darker background for the nav */
+            padding: 10px 0;
+        }
+
+        /* 3. Style the navigation links for visibility */
+        .hero-banner .vf-navigation__link {
+            color: #ecf0f1; /* A light grey for text */
+            padding: 8px 16px;
+            border-bottom: 2px solid transparent; /* Prepare for the active state underline */
+            transition: color 0.2s, border-bottom-color 0.2s;
+        }
+        
+        .hero-banner .vf-navigation__link:hover {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        /* 4. Style the active navigation link */
+        .hero-banner .vf-navigation__link[aria-current='page'] {
+            color: #ffffff;
+            font-weight: bold;
+            border-bottom-color: #3498db; /* A bright blue underline for the active page */
+        }
+
+        /* 5. Style the main title and subtitle */
+        .hero-banner h1 {
+            font-size: 3rem; /* Make the title bigger */
+            font-weight: 700;
+            margin: 0;
+        }
+        .hero-banner p {
+            font-size: 1.25rem;
+            color: #bdc3c7; /* A softer grey for the subtitle */
+            margin-top: 10px;
+        }
+        .pagination-nav {
+            display: flex;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        .pagination-list {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            overflow: hidden; /* Ensures the border-radius is applied to children */
+        }
+        .pagination-item {
+            margin: 0;
+        }
+        .pagination-link {
+            display: block;
+            padding: 8px 16px;
+            color: #007c82; /* EBI Green */
+            text-decoration: none;
+            border-right: 1px solid #d9d9d9;
+            transition: background-color 0.2s;
+        }
+        .pagination-item:last-child .pagination-link {
+            border-right: none;
+        }
+        .pagination-item:not(.disabled) .pagination-link:hover {
+            background-color: #f0f8ff;
+        }
+        .pagination-item.active .pagination-link {
+            background-color: #007c82; /* EBI Green */
+            color: #ffffff;
+            font-weight: bold;
+            cursor: default;
+        }
+        .pagination-item.disabled .pagination-link {
+            color: #aaaaaa;
+            background-color: #f8f8f8;
+            pointer-events: none; /* Disables click events */
+            cursor: not-allowed;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- ============================================ -->
+    <!-- START: NEW HERO BANNER (REPLACES OLD HEADER) -->
+    <!-- ============================================ -->
+    <section class="hero-banner">
+        <div class="hero-nav-container">
+            <nav class="vf-navigation">
+                <ul class="vf-navigation__list">
+                    <li class="vf-navigation__item">
+                        <a href="{{ PUBLIC_BASE_PREFIX }}/" class="vf-navigation__link" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Home</a>
+                    </li>
+                    <li class="vf-navigation__item">
+                        <a href="{{ PUBLIC_BASE_PREFIX }}/introduction" class="vf-navigation__link" {% if request.endpoint == 'introduction' %}aria-current="page"{% endif %}>Introduction</a>
+                    </li>
+                    <li class="vf-navigation__item">
+                        <a href="{{ PUBLIC_BASE_PREFIX }}/code" class="vf-navigation__link" {% if request.endpoint == 'code' %}aria-current="page"{% endif %}>Code</a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <script type="text/javascript" src="{{ url_for('static', filename='jsmol/JSmol.min.js') }}"></script>
+        </div>
+        
+        <!-- Main hero content -->
+        <h1>MoleculeCreater with EDM</h1>
+        <p>Generate Molecules from Text Descriptions</p>
+    </section>
+    <!-- ========================================== -->
+    <!-- END: NEW HERO BANNER                     -->
+    <!-- ========================================== -->
+
+    <main class="vf-body">
+        <!-- This is where the content of other pages will be injected -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="vf-footer">
+        <div class="vf-footer__inner">
+            <p class="vf-footer__notice"><strong>If you use MoleculeCreater with EDM,please cite the following paper</strong></p>
+            <p class="vf-footer__notice"></p>
+            <p class="vf-footer__notice">Contact JDmoss1@sjtu.edu.cn if you have any problem with the website </p>
+            <p class="vf-footer__notice">Contact HongBin Shen(hbshen@sjtu.edu.cn) </p>
+        </div>
+    </footer>
+
+    <!-- This block allows pages to add their own specific JavaScript if needed -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

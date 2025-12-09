@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Processing - EDM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f3f3ff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .waiting-container {
+            max-width: 800px;
+            margin: 100px auto;
+            background-color: white;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .task-info {
+            background-color: #e7f3ff;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .note {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 30px;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="waiting-container">
+        <h1>Processing Your Request</h1>
+        <div class="spinner"></div>
+
+        <div class="task-info">
+            <p><strong>Task ID:</strong> <span id="task-id"></span></p>
+            <p>Your molecule generation task is being processed on our server.</p>
+            <p>This usually takes 2-5 minutes depending on the complexity.</p>
+        </div>
+
+        <p class="note">
+            Please do not close or refresh this page.<br>
+            You will be automatically redirected to the results page when processing is complete.
+        </p>
+    </div>
+
+    <script>
+        // 获取URL参数中的task_id
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        var taskId = getUrlParameter('task_id');
+        document.getElementById('task-id').textContent = taskId;
+
+        // 定期检查结果是否已生成
+        var checkInterval = 5000; // 每5秒检查一次
+        var maxAttempts = 120; // 最多检查10分钟 (120 * 5s = 600s)
+        var attempts = 0;
+
+        function checkResult() {
+            attempts++;
+
+            // 检查结果文件是否存在
+            $.ajax({
+                url: 'result/' + taskId + '_brief.html',
+                type: 'HEAD',
+                success: function() {
+                    // 文件存在，跳转到结果页面
+                    window.location.href = 'result/' + taskId + '_brief.html';
+                },
+                error: function() {
+                    // 文件不存在，继续等待
+                    if (attempts < maxAttempts) {
+                        setTimeout(checkResult, checkInterval);
+                    } else {
+                        // 超时
+                        $('.waiting-container').html(
+                            '<h1>Processing Timeout</h1>' +
+                            '<p>The task is taking longer than expected.</p>' +
+                            '<p>Please contact support with your Task ID: <strong>' + taskId + '</strong></p>' +
+                            '<a href="index.html" class="btn btn-primary">Return to Home</a>'
+                        );
+                    }
+                }
+            });
+        }
+
+        // 开始检查
+        setTimeout(checkResult, checkInterval);
+
+        // 防止用户刷新页面
+        window.onbeforeunload = function(e) {
+            var dialogText = 'Please do not refresh the page. Your task is being processed.';
+            e.returnValue = dialogText;
+            return dialogText;
+        };
+    </script>
+</body>
+</html>
